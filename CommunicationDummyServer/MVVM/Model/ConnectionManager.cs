@@ -62,5 +62,10 @@ namespace CommunicationDummyServer.MVVM.Model
                     break;
             }
         }
+
+        public string GetCurrentIP()
+        {
+            return tcpServer.GetcurrentIP;
+        }
     }
 }

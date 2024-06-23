@@ -103,6 +103,7 @@ namespace CommunicationDummyServer.MVVM.ViewModel
             if(!_isRunning)
             {
                 connectionManager.StartConnection(ConnectionType.Tcp, "5000", 152000, 6000);
+                IpPortText = connectionManager.GetCurrentIP() + ":5000";
                 ButtonText = "Stop Server";
                 _isRunning = true;
             }

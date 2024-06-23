@@ -11,76 +11,84 @@ namespace CommunicationDummyServer.MVVM.Model
     {
         private TcpListener _listener;
         private bool _isRunning;
+        private CancellationTokenSource _cancellationTokenSource;
+        private TcpClient _client;
+
 
         public TcpServer(int port)
         {
-            _listener = new TcpListener(IPAddress.Any, port);
+            GetcurrentIP = IPAddress.Any.ToString();
+            IPAddress ipAddress = System.Net.IPAddress.Parse(GetcurrentIP);
+            _listener = new TcpListener(ipAddress, port);
         }
 
         public async Task Start()
         {
             _listener.Start();
-            _isRunning = true;
-            ////Console.WriteLine($"Telnet server started on port {_listener.LocalEndpoint}");
 
-            while (_isRunning)
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            while (!_cancellationTokenSource.Token.IsCancellationRequested)
             {
-                TcpClient client = await _listener.AcceptTcpClientAsync();
-                HandleClient(client);
+                _client = await _listener.AcceptTcpClientAsync();
+                _ = Task.Run(() => HandleClient(_client, _cancellationTokenSource.Token));
             }
         }
 
-        private async void HandleClient(TcpClient client)
+        private async void HandleClient(TcpClient client, CancellationToken token)
         {
-            ////Console.WriteLine($"Client connected: {client.Client.RemoteEndPoint}");
 
-            NetworkStream stream = client.GetStream();
-            StreamReader reader = new StreamReader(stream);
-            StreamWriter writer = new StreamWriter(stream);
-            writer.AutoFlush = true;
-
-            try
+            using (client)
             {
-                //// INCLUDE A LOGIN OPTION HERE LATER
-                await writer.WriteLineAsync("Welcome to the Telnet server!");
-                //await writer.WriteLineAsync("Type 'exit' to disconnect.");
+                var buffer = new byte[1024];
+                var stream = client.GetStream();
 
-                string request;
-                do
+                while (!token.IsCancellationRequested)
                 {
-                    request = await reader.ReadLineAsync();
-                    ////Console.WriteLine($"Received from {client.Client.RemoteEndPoint}: {request}");
-
-                    // Example command handling
-                    if (request.Equals("exit", StringComparison.OrdinalIgnoreCase))
+                    if (!stream.DataAvailable)
                     {
-                        await writer.WriteLineAsync("Goodbye!");
+                        await Task.Delay(100, token);
+                        continue;
+                    }
+
+                    try
+                    {
+                        var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token);
+                        if (bytesRead == 0)
+                        {
+                            break;
+                        }
+
+                        var message = System.Text.Encoding.ASCII.GetString(buffer, 0, bytesRead);
+
+                        // Echo the message back to the client
+                        await stream.WriteAsync(buffer, 0, bytesRead, token);
+                    }
+                    catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException)
+                    {
                         break;
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        await writer.WriteLineAsync($"You said: {request}");
+                        break;
                     }
-                } while (request != null);
-            }
-            catch (Exception ex)
-            {
-                ////Console.WriteLine($"Error handling client: {ex.Message}");
-            }
-            finally
-            {
-                reader.Close();
-                writer.Close();
-                client.Close();
-                ////Console.WriteLine($"Client disconnected: {client.Client.RemoteEndPoint}");
+                }
             }
         }
 
         public void Stop()
         {
             _isRunning = false;
+            _cancellationTokenSource.Cancel();
             _listener.Stop();
-            ////Console.WriteLine("Telnet server stopped.");
+        }
+
+        private string _getcurrentIP;
+
+        public string GetcurrentIP
+        {
+            get { return _getcurrentIP; }
+            set { _getcurrentIP = value; }
         }
     }
 
