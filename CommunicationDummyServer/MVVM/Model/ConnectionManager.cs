@@ -41,7 +41,7 @@ namespace CommunicationDummyServer.MVVM.Model
                     break;
                 case ConnectionType.Serial:
                     serialServer = new SerialServer(portName, baudRate);
-                    serialServer.Start();
+                    serialServer.Start(commands);
                     break;
                 default:
                     break;
