@@ -31,13 +31,13 @@ namespace CommunicationDummyServer.MVVM.Model
             // Initialize the connection manager
         }
 
-        public async void StartConnection(ConnectionType connectionType, string portName, int baudRate, int port)
+        public async void StartConnection(ConnectionType connectionType, string portName, int baudRate, int port, List<string> commands)
         {
             switch (connectionType)
             {
                 case ConnectionType.Tcp:
                     tcpServer = new TcpServer(port);
-                    await tcpServer.Start();
+                    await tcpServer.Start(commands);
                     break;
                 case ConnectionType.Serial:
                     serialServer = new SerialServer(portName, baudRate);

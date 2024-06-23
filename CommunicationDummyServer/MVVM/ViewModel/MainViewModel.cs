@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Documents;
 using System.Windows.Input;
 using CommunicationDummyServer.Core;
 using CommunicationDummyServer.MVVM.Model;
@@ -16,9 +17,17 @@ namespace CommunicationDummyServer.MVVM.ViewModel
         private bool _isRunning;
         private string _ipPortText;
         private string _expectedResponseText;
-        public string IpPortPlaceholder = "IP:PORT";
+        public string IpPortPlaceholderTcp = "0.0.0.0:5000";
+        public string IpPortPlaceholderSerial = "COM1:152000";
         public string ExpectedResponsePlaceholder = "Insert the expected responses to each of the incoming commands separated by new line";
         private ConnectionManager connectionManager;
+
+        private string ip;
+        private int port;
+        private string comPort;
+        private int baudRate;
+
+        private List<string> commands = new List<string>();
 
         public MainViewModel()
         {
@@ -27,7 +36,7 @@ namespace CommunicationDummyServer.MVVM.ViewModel
 
             connectionManager = new ConnectionManager();
             ConnectionTypes = new List<ConnectionType>((ConnectionType[])Enum.GetValues(typeof(ConnectionType)));
-            IpPortText = IpPortPlaceholder;
+            IpPortText = IpPortPlaceholderTcp;
             ExpectedResponseText = ExpectedResponsePlaceholder;
             IpPortGotFocusCommand = new RelayCommand(OnIpPortGotFocus);
             IpPortLostFocusCommand = new RelayCommand(OnIpPortLostFocus);
@@ -37,6 +46,20 @@ namespace CommunicationDummyServer.MVVM.ViewModel
             // Initialize commands with empty actions
             RunServerCommand = new RelayCommand(RunServer);
             SaveSettingsCommand = new RelayCommand(SaveSettings);
+        }
+
+        private void ExtractIpPort(out string ip, out int port)
+        {
+            string[] ipPort = IpPortText.Split(':');
+            ip = ipPort[0];
+            port = int.Parse(ipPort[1]);
+        }
+
+        private void ExtractComPort(out string comPort, out int baudRate)
+        {
+            string[] comPortBaudRate = IpPortText.Split(':');
+            comPort = comPortBaudRate[0];
+            baudRate = int.Parse(comPortBaudRate[1]);
         }
 
         public string IpPortText
@@ -68,7 +91,7 @@ namespace CommunicationDummyServer.MVVM.ViewModel
 
         private void OnIpPortGotFocus(object obj)
         {
-            if (IpPortText == IpPortPlaceholder)
+            if (IpPortText == IpPortPlaceholderTcp)
             {
                 IpPortText = string.Empty;
             }
@@ -78,7 +101,7 @@ namespace CommunicationDummyServer.MVVM.ViewModel
         {
             if (string.IsNullOrWhiteSpace(IpPortText))
             {
-                IpPortText = IpPortPlaceholder;
+                IpPortText = IpPortPlaceholderTcp;
             }
         }
 
@@ -100,10 +123,27 @@ namespace CommunicationDummyServer.MVVM.ViewModel
 
         private void RunServer(object obj)
         {
+            ////TODO: REFACTOR LATER
+            commands = ExpectedResponseText.Split(new[] { Environment.NewLine }, StringSplitOptions.None).ToList();
+
+            if(!_isRunning && SelectedConnectionType == ConnectionType.Tcp)
+            {
+                ExtractIpPort(out ip, out port);
+            }
+            else if(!_isRunning && SelectedConnectionType == ConnectionType.Serial)
+            {
+                ExtractComPort(out comPort, out baudRate);
+            }
+
             if(!_isRunning)
             {
-                connectionManager.StartConnection(ConnectionType.Tcp, "5000", 152000, 6000);
-                IpPortText = connectionManager.GetCurrentIP() + ":5000";
+                connectionManager.StartConnection(SelectedConnectionType, comPort, baudRate, port, commands);
+
+                if(SelectedConnectionType == ConnectionType.Tcp)
+                    IpPortText = connectionManager.GetCurrentIP() + ":" + port.ToString();
+                else
+                    IpPortText = comPort + ":" + baudRate.ToString();
+
                 ButtonText = "Stop Server";
                 _isRunning = true;
             }
@@ -111,6 +151,7 @@ namespace CommunicationDummyServer.MVVM.ViewModel
             {
                 _isRunning = false;
                 connectionManager.StopConnection(SelectedConnectionType);
+                ButtonText = "Run Server";
             }
         }
 
@@ -129,6 +170,14 @@ namespace CommunicationDummyServer.MVVM.ViewModel
             set
             {
                 _selectedConnectionType = value;
+                if(_selectedConnectionType == ConnectionType.Tcp)
+                {
+                    IpPortText = IpPortPlaceholderTcp;
+                }
+                else
+                {
+                    IpPortText = IpPortPlaceholderSerial;
+                }
                 OnPropertyChanged();
             }
         }
@@ -143,6 +192,13 @@ namespace CommunicationDummyServer.MVVM.ViewModel
                 OnPropertyChanged();
             }
         }
+
+        /**
+         * TODO:
+         * - Disable the Drop down menu, command box and IP/Port text box when the server is running
+         * - For Serial COM check if any COM ports are available. If not, ask 
+         * the user to install HHD Virtual Serial Port or any other software
+         * **/
 
         public event PropertyChangedEventHandler PropertyChanged;
 

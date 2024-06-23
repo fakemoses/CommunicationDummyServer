@@ -19,7 +19,7 @@ namespace CommunicationDummyServer.MVVM.View
             var viewModel = DataContext as MainViewModel;
             if (textBox != null && viewModel != null)
             {
-                if (textBox.Name == "IpPortTextBox" && textBox.Text == viewModel.IpPortPlaceholder)
+                if (textBox.Name == "IpPortTextBox" && textBox.Text == viewModel.IpPortPlaceholderTcp)
                 {
                     textBox.Text = string.Empty;
                     textBox.Foreground = new SolidColorBrush(Colors.Black);
@@ -42,7 +42,7 @@ namespace CommunicationDummyServer.MVVM.View
                 {
                     if (textBox.Name == "IpPortTextBox")
                     {
-                        textBox.Text = viewModel.IpPortPlaceholder;
+                        textBox.Text = viewModel.IpPortPlaceholderTcp;
                         textBox.Foreground = new SolidColorBrush(Colors.Gray);
                     }
                     else if (textBox.Name == "ExpectedResponseTextBox")

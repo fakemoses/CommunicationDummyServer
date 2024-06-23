@@ -1,8 +1,8 @@
 ﻿using System;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CommunicationDummyServer.MVVM.Model
@@ -14,29 +14,50 @@ namespace CommunicationDummyServer.MVVM.Model
         private CancellationTokenSource _cancellationTokenSource;
         private TcpClient _client;
 
-
         public TcpServer(int port)
         {
             GetcurrentIP = IPAddress.Any.ToString();
-            IPAddress ipAddress = System.Net.IPAddress.Parse(GetcurrentIP);
+            IPAddress ipAddress = IPAddress.Parse(GetcurrentIP);
             _listener = new TcpListener(ipAddress, port);
         }
 
-        public async Task Start()
+        public async Task Start(List<string> commands)
         {
             _listener.Start();
-
             _cancellationTokenSource = new CancellationTokenSource();
+            _isRunning = true;
 
-            while (!_cancellationTokenSource.Token.IsCancellationRequested)
+            try
             {
-                _client = await _listener.AcceptTcpClientAsync();
-                _ = Task.Run(() => HandleClient(_client, _cancellationTokenSource.Token));
+                while (_isRunning && !_cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        _client = await _listener.AcceptTcpClientAsync();
+                        _ = Task.Run(() => HandleClient(_client, commands, _cancellationTokenSource.Token));
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // Listener has been stopped
+                        break;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Listener is in an invalid state
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle any other exceptions that may occur
             }
         }
 
-        private async void HandleClient(TcpClient client, CancellationToken token)
+        private async Task HandleClient(TcpClient client, List<string> commands, CancellationToken token)
         {
+            bool finalCommand = false;
+            int commandIndex = 0;
 
             using (client)
             {
@@ -59,10 +80,30 @@ namespace CommunicationDummyServer.MVVM.Model
                             break;
                         }
 
-                        var message = System.Text.Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                        var message = Encoding.ASCII.GetString(buffer, 0, bytesRead);
 
-                        // Echo the message back to the client
-                        await stream.WriteAsync(buffer, 0, bytesRead, token);
+                        // Check if the message contains a newline
+                        if (message.Contains("\r\n"))
+                        {
+                            if (commandIndex < commands.Count)
+                            {
+                                // Send the next command in the list
+                                string commandToSend = commands[commandIndex++];
+                                byte[] response = Encoding.ASCII.GetBytes(commandToSend + "\r\n");
+                                await stream.WriteAsync(response, 0, response.Length, token);
+                            }
+                            else
+                            {
+                                // No more commands to send
+                                if (!finalCommand)
+                                {
+                                    string finalMessage = "No more commands to send. Restart the server.\r\n";
+                                    byte[] response = Encoding.ASCII.GetBytes(finalMessage);
+                                    await stream.WriteAsync(response, 0, response.Length, token);
+                                    finalCommand = true;
+                                }
+                            }
+                        }
                     }
                     catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException)
                     {
@@ -70,6 +111,7 @@ namespace CommunicationDummyServer.MVVM.Model
                     }
                     catch (Exception ex)
                     {
+                        // Log or handle other exceptions as needed
                         break;
                     }
                 }
@@ -80,7 +122,15 @@ namespace CommunicationDummyServer.MVVM.Model
         {
             _isRunning = false;
             _cancellationTokenSource.Cancel();
-            _listener.Stop();
+
+            try
+            {
+                _listener.Stop();
+            }
+            catch (Exception ex)
+            {
+
+            }
         }
 
         private string _getcurrentIP;
@@ -91,5 +141,4 @@ namespace CommunicationDummyServer.MVVM.Model
             set { _getcurrentIP = value; }
         }
     }
-
 }
