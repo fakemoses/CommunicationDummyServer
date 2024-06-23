@@ -63,6 +63,7 @@ namespace CommunicationDummyServer.MVVM.Model
             {
                 var buffer = new byte[1024];
                 var stream = client.GetStream();
+                var accumulatedMessage = new StringBuilder();
 
                 while (!token.IsCancellationRequested)
                 {
@@ -81,13 +82,18 @@ namespace CommunicationDummyServer.MVVM.Model
                         }
 
                         var message = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                        accumulatedMessage.Append(message);
 
-                        // Check if the message contains a newline
-                        if (message.Contains("\r\n"))
+                        // Process the accumulated message
+                        while (accumulatedMessage.ToString().Contains("\r\n"))
                         {
+                            var commandEndIndex = accumulatedMessage.ToString().IndexOf("\r\n");
+                            var fullCommand = accumulatedMessage.ToString().Substring(0, commandEndIndex + 2);
+                            accumulatedMessage.Remove(0, commandEndIndex + 2);
+
+                            // Respond with the next command in the list
                             if (commandIndex < commands.Count)
                             {
-                                // Send the next command in the list
                                 string commandToSend = commands[commandIndex++];
                                 byte[] response = Encoding.ASCII.GetBytes(commandToSend + "\r\n");
                                 await stream.WriteAsync(response, 0, response.Length, token);

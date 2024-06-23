@@ -1,8 +1,8 @@
-﻿<Window x:Class="CommunicationDummyServer.MVVM.View.MainWindow"
+﻿<Window x:Name="Dummy_Server" x:Class="CommunicationDummyServer.MVVM.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:CommunicationDummyServer.MVVM.ViewModel"
-        Title="MainWindow" Height="400" Width="560" Background="#34495E" ResizeMode="NoResize">
+        Title="Dummy Server" Height="400" Width="561" Background="#34495E" ResizeMode="NoResize" Icon="/Resources/icon.png">
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
