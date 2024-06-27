@@ -17,7 +17,7 @@ namespace CommunicationDummyServer.MVVM.ViewModel
         private bool _isRunning;
         private string _ipPortText;
         private string _expectedResponseText;
-        public string IpPortPlaceholderTcp = "0.0.0.0:5000";
+        public string IpPortPlaceholderTcp = "127.0.1.0:5000";
         public string IpPortPlaceholderSerial = "COM1:152000";
         public string ExpectedResponsePlaceholder = "Insert the expected responses to each of the incoming commands separated by new line";
         private ConnectionManager connectionManager;
@@ -42,10 +42,11 @@ namespace CommunicationDummyServer.MVVM.ViewModel
             IpPortLostFocusCommand = new RelayCommand(OnIpPortLostFocus);
             ExpectedResponseGotFocusCommand = new RelayCommand(OnExpectedResponseGotFocus);
             ExpectedResponseLostFocusCommand = new RelayCommand(OnExpectedResponseLostFocus);
-
+            
             // Initialize commands with empty actions
             RunServerCommand = new RelayCommand(RunServer);
             SaveSettingsCommand = new RelayCommand(SaveSettings);
+            OptionsCommand = new RelayCommand(OnOptionsClicked);
         }
 
         private void ExtractIpPort(out string ip, out int port)
@@ -88,6 +89,7 @@ namespace CommunicationDummyServer.MVVM.ViewModel
         public ICommand ExpectedResponseLostFocusCommand { get; }
         public ICommand RunServerCommand { get; }
         public ICommand SaveSettingsCommand { get; }
+        public ICommand OptionsCommand { get; }
 
         private void OnIpPortGotFocus(object obj)
         {
@@ -119,6 +121,11 @@ namespace CommunicationDummyServer.MVVM.ViewModel
             {
                 ExpectedResponseText = ExpectedResponsePlaceholder;
             }
+        }
+
+        private void OnOptionsClicked(object obj)
+        {
+            // Do nothing on click
         }
 
         private void RunServer(object obj)

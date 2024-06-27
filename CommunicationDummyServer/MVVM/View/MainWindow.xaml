@@ -33,11 +33,16 @@
                  GotFocus="TextBox_GotFocus" LostFocus="TextBox_LostFocus"/>
 
         <!-- Run Server Button -->
-        <Button Content="{Binding ButtonText}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,280,0,0" Width="120" Height="40" Background="#2ECC71" Foreground="White"
+        <Button Content="{Binding ButtonText}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="64,280,0,0" Width="120" Height="40" Background="#2ECC71" Foreground="White"
                 Command="{Binding RunServerCommand}"/>
 
         <!-- Save Settings Button -->
-        <Button Content="Save Settings" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="150,280,0,0" Width="120" Height="40" Background="#3498DB" Foreground="White"
+        <Button Content="Save Settings" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="204,280,0,0" Width="120" Height="40" Background="#3498DB" Foreground="White"
                 Command="{Binding SaveSettingsCommand}"/>
+
+        <!-- Settings Button -->
+        <Button Content="Options" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="344,280,0,0" Width="120" Height="40" Background="#3498DB" Foreground="White"
+        Command="{Binding OptionsCommand}"/>
+
     </Grid>
 </Window>
